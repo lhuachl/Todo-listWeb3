@@ -8,6 +8,14 @@ builder.Services.AddRazorPages();
 // Add HttpClient and TaskApiService
 builder.Services.AddHttpClient<TaskApiService>();
 
+// Add session support
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -22,6 +30,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+// Use session
+app.UseSession();
 
 app.UseAuthorization();
 

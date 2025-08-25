@@ -1,9 +1,10 @@
 body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #181c22;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    color: #e5e9f2;
     overflow-x: hidden;
 }
 
@@ -12,161 +13,141 @@ body {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 280px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    width: 260px;
+    background: #23272f;
+    border-right: 1px solid #23272f;
     display: flex;
     flex-direction: column;
-    padding: 30px 20px;
+    padding: 30px 18px;
     z-index: 100;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 8px 0 24px 0 rgba(0,0,0,0.18);
+    border-radius: 0 32px 32px 0;
 }
 
 .sidebar-header {
-    font-size: 2.5rem;
-    margin-bottom: 3rem;
-    color: white;
-    font-weight: 300;
+    font-size: 2rem;
+    margin-bottom: 2.5rem;
+    color: #e5e9f2;
+    font-weight: 400;
     text-align: center;
-    letter-spacing: 3px;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    letter-spacing: 2px;
 }
 
 .sidebar-btn {
-    margin: 12px 0;
-    padding: 15px 25px;
+    margin: 10px 0;
+    padding: 13px 20px;
     border: none;
-    border-radius: 15px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    border-radius: 12px;
+    background: #23272f;
+    color: #e5e9f2;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     outline: none;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    text-transform: none;
+    letter-spacing: 0.5px;
     font-weight: 500;
+    box-shadow: 2px 2px 8px #181c22, -2px -2px 8px #23272f;
 }
 
-    .sidebar-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    }
+.sidebar-btn:hover {
+    background: #23272f;
+    color: #2563eb;
+    box-shadow: 2px 2px 8px #23272f, -2px -2px 8px #181c22;
+}
 
-    .sidebar-btn.active {
-        background: rgba(255, 255, 255, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-    }
+.sidebar-btn.active {
+    background: #181c22;
+    color: #2563eb;
+    border: 1px solid #2563eb;
+}
 
 .main-content {
-    margin-left: 300px;
-    padding: 40px;
+    margin-left: 280px;
+    padding: 36px;
     min-height: 100vh;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: none;
+    transition: margin-left 0.3s;
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    animation: fadeInUp 0.6s ease-out;
+    border-radius: 32px;
+    background: #23272f;
+    box-shadow: 8px 8px 24px #181c22, -8px -8px 24px #23272f;
+    padding: 32px 28px;
+    margin-bottom: 24px;
+    transition: box-shadow 0.2s;
 }
 
-    .glass-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-    }
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.glass-card:hover {
+    box-shadow: 4px 4px 16px #181c22, -4px -4px 16px #23272f;
 }
 
 .glass-input {
     width: 100%;
-    padding: 15px 20px;
-    margin: 12px 0;
+    padding: 13px 18px;
+    margin: 10px 0;
     border: none;
-    border-radius: 15px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    background: #23272f;
+    border: 1px solid #353b45;
     font-size: 1rem;
-    color: white;
+    color: #e5e9f2;
     outline: none;
-    transition: all 0.3s ease;
+    transition: border 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
+    box-shadow: 2px 2px 8px #181c22, -2px -2px 8px #23272f;
 }
 
-    .glass-input::placeholder {
-        color: rgba(255, 255, 255, 0.7);
-    }
+.glass-input::placeholder {
+    color: #7a869a;
+}
 
-    .glass-input:focus {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-    }
+.glass-input:focus {
+    border: 1.5px solid #2563eb;
+    box-shadow: 0 0 0 2px #23272f;
+}
 
 .glass-btn {
-    padding: 12px 30px;
+    padding: 10px 24px;
     border: none;
-    border-radius: 15px;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
+    border-radius: 12px;
+    background: #181c22;
+    color: #2563eb;
     font-size: 1rem;
     cursor: pointer;
     margin: 8px 5px;
-    transition: all 0.3s ease;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    box-shadow: 2px 2px 8px #23272f, -2px -2px 8px #181c22;
 }
 
-    .glass-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    }
+.glass-btn:hover {
+    background: #2563eb;
+    color: #fff;
+}
 
-    .glass-btn.primary {
-        background: rgba(103, 126, 234, 0.6);
-        border: 1px solid rgba(103, 126, 234, 0.8);
-    }
+.glass-btn.primary {
+    background: #2563eb;
+    color: #fff;
+    border: 1px solid #2563eb;
+}
 
-    .glass-btn.danger {
-        background: rgba(255, 99, 132, 0.6);
-        border: 1px solid rgba(255, 99, 132, 0.8);
-    }
+.glass-btn.danger {
+    background: #23272f;
+    color: #e53935;
+    border: 1px solid #e53935;
+}
 
-    .glass-btn.small {
-        padding: 8px 18px;
-        font-size: 0.9rem;
-    }
+.glass-btn.small {
+    padding: 7px 16px;
+    font-size: 0.95rem;
+}
 
 .tasks-grid {
     display: grid;
-    gap: 20px;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
 }
 
 .task-item {
@@ -178,46 +159,48 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .task-title {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 600;
-    color: white;
+    color: #e5e9f2;
     margin: 0;
+    flex: 1;
+    margin-right: 10px;
 }
 
 .task-status {
-    padding: 6px 15px;
-    border-radius: 20px;
-    font-size: 0.8rem;
+    padding: 5px 13px;
+    border-radius: 16px;
+    font-size: 0.85rem;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .status-todo {
-    background: rgba(255, 193, 7, 0.3);
-    color: #ffc107;
-    border: 1px solid rgba(255, 193, 7, 0.5);
+    background: #23272f;
+    color: #7a869a;
+    border: 1px solid #353b45;
 }
 
 .status-progress {
-    background: rgba(0, 123, 255, 0.3);
-    color: #007bff;
-    border: 1px solid rgba(0, 123, 255, 0.5);
+    background: #232c3b;
+    color: #2563eb;
+    border: 1px solid #2563eb;
 }
 
 .status-done {
-    background: rgba(40, 167, 69, 0.3);
-    color: #28a745;
-    border: 1px solid rgba(40, 167, 69, 0.5);
+    background: #1e2a22;
+    color: #43a047;
+    border: 1px solid #43a047;
 }
 
 .task-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 15px 0;
+    color: #b0b7c3;
+    margin: 12px 0;
     line-height: 1.6;
 }
 
@@ -225,9 +208,9 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 20px 0;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
+    margin: 16px 0;
+    color: #7a869a;
+    font-size: 0.95rem;
 }
 
 .priority-indicator {
@@ -245,31 +228,87 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
+    background: #353b45;
 }
 
-    .priority-dot.active {
-        background: #ffc107;
-    }
+.priority-dot.active {
+    background: #2563eb;
+}
+
+/* Nuevos estilos para prioridades */
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    border: 1px solid currentColor;
+}
+
+.priority-high {
+    background: rgba(229, 57, 53, 0.2);
+    color: #e53935;
+    border-color: #e53935;
+}
+
+.priority-medium {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+.priority-low {
+    background: rgba(67, 160, 71, 0.2);
+    color: #43a047;
+    border-color: #43a047;
+}
+
+/* Indicadores de prioridad para tareas */
+.task-item[data-priority="3"] {
+    border-left: 4px solid #e53935;
+}
+
+.task-item[data-priority="2"] {
+    border-left: 4px solid #ffc107;
+}
+
+.task-item[data-priority="1"] {
+    border-left: 4px solid #43a047;
+}
+
+/* Animaciones para prioridades altas */
+.task-item[data-priority="3"] .task-title {
+    animation: pulse-priority 2s infinite;
+}
+
+@keyframes pulse-priority {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
 
 .task-actions {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
-    margin-top: 20px;
+    margin-top: 16px;
 }
 
 .form-title {
-    color: white;
-    font-size: 2rem;
-    font-weight: 300;
-    margin-bottom: 30px;
+    color: #e5e9f2;
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 24px;
     text-align: center;
 }
 
 .form-row {
     display: flex;
-    gap: 15px;
+    gap: 12px;
 }
 
 .form-group {
@@ -278,25 +317,36 @@ body {
 
 .loading {
     text-align: center;
-    color: rgba(255, 255, 255, 0.8);
-    padding: 40px;
+    color: #7a869a;
+    padding: 32px;
 }
 
+/* Estilos responsivos */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
     }
-
-        .sidebar.active {
-            transform: translateX(0);
-        }
-
+    .sidebar.active {
+        transform: translateX(0);
+    }
     .main-content {
         margin-left: 0;
-        padding: 20px;
+        padding: 16px;
     }
-
     .tasks-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .task-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .task-title {
+        margin-right: 0;
+    }
+    
+    .form-row {
+        flex-direction: column;
     }
 }

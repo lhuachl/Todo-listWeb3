@@ -1,18 +1,38 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "To-Do List";
+    ViewData["Title"] = "To-Do List - " + Model.Username;
 }
-<link rel="stylesheet" href="~/css/neuromorphic.css" />
 
 <div class="sidebar">
-    <div class="sidebar-header">Tasks</div>
+    <div class="sidebar-header">📋 Tasks</div>
+    <div style="text-align: center; margin-bottom: 20px; color: #7a869a; font-size: 0.9rem;">
+        👤 @Model.Username (ID: @Model.UserId)
+    </div>
     <button class="sidebar-btn" onclick="showView('add')" id="btn-add">✚ Agregar Tarea</button>
     <button class="sidebar-btn active" onclick="showView('list')" id="btn-list">📋 Ver Tareas</button>
     <button class="sidebar-btn" onclick="showView('stats')" id="btn-stats">📊 Estadísticas</button>
     <button class="sidebar-btn" onclick="filterByStatus('To Do')" id="btn-todo">⏳ Pendientes</button>
     <button class="sidebar-btn" onclick="filterByStatus('In Progress')" id="btn-progress">🔄 En Progreso</button>
     <button class="sidebar-btn" onclick="filterByStatus('Done')" id="btn-done">✅ Completadas</button>
+    
+    <!-- Nuevos filtros por prioridad -->
+    <div style="border-top: 1px solid #353b45; margin: 20px 0; padding-top: 20px;">
+        <div style="text-align: center; margin-bottom: 15px; color: #7a869a; font-size: 0.85rem;">
+            🎯 FILTRAR POR PRIORIDAD
+        </div>
+        <button class="sidebar-btn" onclick="filterByPriority(3)" id="btn-high">🔴 Alta</button>
+        <button class="sidebar-btn" onclick="filterByPriority(2)" id="btn-medium">🟡 Media</button>
+        <button class="sidebar-btn" onclick="filterByPriority(1)" id="btn-low">🟢 Baja</button>
+    </div>
+    
+    <div style="margin-top: auto; padding-top: 20px;">
+        <form method="post" asp-page-handler="Logout">
+            <button type="submit" class="sidebar-btn" style="background: #e53935; color: white;">
+                🚪 Cerrar Sesión
+            </button>
+        </form>
+    </div>
 </div>
 
 <div class="main-content">
@@ -37,16 +57,14 @@
                 </div>
                 <div class="form-group">
                     <select id="priority" class="glass-input">
-                        <option value="1">⭐ Prioridad 1</option>
-                        <option value="2">⭐⭐ Prioridad 2</option>
-                        <option value="3">⭐⭐⭐ Prioridad 3</option>
-                        <option value="4">⭐⭐⭐⭐ Prioridad 4</option>
-                        <option value="5">⭐⭐⭐⭐⭐ Prioridad 5</option>
+                        <option value="1">🟢 Prioridad Baja</option>
+                        <option value="2">🟡 Prioridad Media</option>
+                        <option value="3">🔴 Prioridad Alta</option>
                     </select>
                 </div>
             </div>
             <div class="task-actions">
-                <button type="button" class="glass-btn" onclick="showView('list')">Cancelar</button>
+                <button type="button" class="glass-btn" onclick="cancelEdit()">Cancelar</button>
                 <button type="submit" class="glass-btn primary" id="submit-btn">Guardar Tarea</button>
             </div>
         </form>
@@ -62,273 +80,516 @@
 
     <!-- Estadísticas -->
     <div id="stats-container" class="glass-card" style="display:none;">
-        <h2 class="form-title">📊 Estadísticas de Tareas</h2>
+        <h2 class="form-title">📊 Estadísticas de @Model.Username</h2>
         <div id="stats-content"></div>
     </div>
 </div>
 
 <script>
+// ============================================================================
+// VARIABLES GLOBALES
+// ============================================================================
+const API_BASE = 'http://localhost:8000';
+const userId = @Model.UserId;
 let currentTasks = [];
 let editingTaskId = null;
+let isEditMode = false;
 
-// Cargar tareas al iniciar
+// Utilidades para prioridades
+const PRIORITY = {
+    LOW: 1,
+    MEDIUM: 2, 
+    HIGH: 3,
+    getName: (priority) => {
+        const names = { 1: 'Baja', 2: 'Media', 3: 'Alta' };
+        return names[priority] || 'Baja';
+    },
+    getIcon: (priority) => {
+        const icons = { 1: '🟢', 2: '🟡', 3: '🔴' };
+        return icons[priority] || '🟢';
+    },
+    getColor: (priority) => {
+        const colors = { 1: '#43a047', 2: '#ffc107', 3: '#e53935' };
+        return colors[priority] || '#43a047';
+    }
+};
+
+console.log('🚀 Iniciando aplicación para usuario:', { userId, username: '@Model.Username' });
+
+// ============================================================================
+// INICIALIZACIÓN
+// ============================================================================
 window.onload = function() {
     loadTasks();
 };
 
-// Función para mostrar diferentes vistas
+// ============================================================================
+// NAVEGACIÓN DE VISTAS
+// ============================================================================
 function showView(view) {
-    // Remover clase active de todos los botones
-    document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+    // Limpiar botones activos
+    document.querySelectorAll('.sidebar-btn').forEach(btn => 
+        btn.classList.remove('active')
+    );
     
     // Ocultar todas las vistas
+    hideAllViews();
+    
+    // Mostrar vista seleccionada
+    switch(view) {
+        case 'add':
+            showAddTaskView();
+            break;
+        case 'list':
+            showTaskListView();
+            break;
+        case 'stats':
+            showStatsView();
+            break;
+    }
+}
+
+function hideAllViews() {
     document.getElementById('task-form').style.display = 'none';
     document.getElementById('tasks-container').style.display = 'none';
     document.getElementById('stats-container').style.display = 'none';
+}
+
+function showAddTaskView() {
+    document.getElementById('btn-add').classList.add('active');
+    document.getElementById('task-form').style.display = 'block';
     
-    switch(view) {
-        case 'add':
-            document.getElementById('btn-add').classList.add('active');
-            document.getElementById('task-form').style.display = 'block';
-            document.getElementById('form-title').textContent = 'Agregar Nueva Tarea';
-            document.getElementById('submit-btn').textContent = 'Guardar Tarea';
-            clearForm();
-            break;
-        case 'list':
-            document.getElementById('btn-list').classList.add('active');
-            document.getElementById('tasks-container').style.display = 'block';
-            loadTasks();
-            break;
-        case 'stats':
-            document.getElementById('btn-stats').classList.add('active');
-            document.getElementById('stats-container').style.display = 'block';
-            loadStats();
-            break;
+    // Solo limpiar el formulario si NO estamos en modo edición
+    if (!isEditMode) {
+        document.getElementById('form-title').textContent = 'Agregar Nueva Tarea';
+        document.getElementById('submit-btn').textContent = 'Guardar Tarea';
+        clearForm();
     }
 }
 
-// Cargar todas las tareas
+function showTaskListView() {
+    document.getElementById('btn-list').classList.add('active');
+    document.getElementById('tasks-container').style.display = 'block';
+    // Resetear modo edición al volver a la lista
+    resetEditMode();
+    loadTasks();
+}
+
+function showStatsView() {
+    document.getElementById('btn-stats').classList.add('active');
+    document.getElementById('stats-container').style.display = 'block';
+    // Resetear modo edición al ir a estadísticas
+    resetEditMode();
+    loadStats();
+}
+
+// ============================================================================
+// GESTIÓN DE MODO EDICIÓN
+// ============================================================================
+function setEditMode(taskId, task) {
+    isEditMode = true;
+    editingTaskId = taskId;
+    
+    // Actualizar UI para modo edición
+    document.getElementById('form-title').textContent = 'Editar Tarea';
+    document.getElementById('submit-btn').textContent = 'Actualizar Tarea';
+    
+    // Llenar formulario con datos de la tarea
+    document.getElementById('task-id').value = task.id;
+    document.getElementById('title').value = task.title;
+    document.getElementById('description').value = task.description || '';
+    document.getElementById('status').value = task.status;
+    document.getElementById('priority').value = task.priority || 1;
+    
+    console.log('🔧 Modo edición activado para tarea:', taskId);
+}
+
+function resetEditMode() {
+    isEditMode = false;
+    editingTaskId = null;
+    console.log('🔄 Modo edición reseteado');
+}
+
+function cancelEdit() {
+    resetEditMode();
+    showView('list');
+}
+
+// ============================================================================
+// GESTIÓN DE TAREAS
+// ============================================================================
 async function loadTasks() {
     try {
-        showLoading(true);
-        const response = await fetch('http://localhost:8000/tasks/');
-        if (!response.ok) throw new Error('Error al cargar tareas');
+        setLoading(true);
+        
+        const response = await fetch(`${API_BASE}/tasks/?user_id=${userId}`);
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
         
         currentTasks = await response.json();
+        console.log('✅ Tareas cargadas:', currentTasks.length);
         displayTasks(currentTasks);
+        
     } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('tasks-grid').innerHTML = 
-            '<div class="glass-card"><p style="color: white; text-align: center;">Error al cargar las tareas. Verifica que la API esté ejecutándose.</p></div>';
+        console.error('❌ Error al cargar tareas:', error);
+        showError('Error al cargar las tareas', error.message);
     } finally {
-        showLoading(false);
+        setLoading(false);
     }
 }
 
-// Filtrar tareas por estado
 async function filterByStatus(status) {
     try {
-        showLoading(true);
-        const response = await fetch(`http://localhost:8000/tasks/?status_filter=${encodeURIComponent(status)}`);
-        if (!response.ok) throw new Error('Error al filtrar tareas');
+        setLoading(true);
+        
+        const response = await fetch(`${API_BASE}/tasks/?user_id=${userId}&status=${encodeURIComponent(status)}`);
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
         
         const filteredTasks = await response.json();
         displayTasks(filteredTasks);
         
         // Activar botón correspondiente
-        document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.sidebar-btn').forEach(btn => 
+            btn.classList.remove('active')
+        );
+        
         if (status === 'To Do') document.getElementById('btn-todo').classList.add('active');
         if (status === 'In Progress') document.getElementById('btn-progress').classList.add('active');
         if (status === 'Done') document.getElementById('btn-done').classList.add('active');
         
-        document.getElementById('tasks-container').style.display = 'block';
-        document.getElementById('task-form').style.display = 'none';
-        document.getElementById('stats-container').style.display = 'none';
+        showTaskListView();
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error al filtrar tareas:', error);
+        showError('Error al filtrar tareas', error.message);
     } finally {
-        showLoading(false);
+        setLoading(false);
     }
 }
 
-// Mostrar/ocultar loading
-function showLoading(show) {
-    document.getElementById('tasks-loading').style.display = show ? 'block' : 'none';
+async function filterByPriority(priority) {
+    try {
+        setLoading(true);
+        
+        const response = await fetch(`${API_BASE}/tasks/?user_id=${userId}&priority=${priority}`);
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const filteredTasks = await response.json();
+        displayTasks(filteredTasks);
+        
+        // Activar botón correspondiente
+        document.querySelectorAll('.sidebar-btn').forEach(btn => 
+            btn.classList.remove('active')
+        );
+        
+        if (priority === 1) document.getElementById('btn-low').classList.add('active');
+        if (priority === 2) document.getElementById('btn-medium').classList.add('active');
+        if (priority === 3) document.getElementById('btn-high').classList.add('active');
+        
+        showTaskListView();
+        
+    } catch (error) {
+        console.error('❌ Error al filtrar tareas por prioridad:', error);
+        showError('Error al filtrar tareas por prioridad', error.message);
+    } finally {
+        setLoading(false);
+    }
 }
 
-// Mostrar tareas en la interfaz
+async function submitTask(event) {
+    event.preventDefault();
+    
+    const title = document.getElementById('title').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const status = document.getElementById('status').value;
+    const priority = parseInt(document.getElementById('priority').value);
+    
+    if (!title) {
+        alert('⚠️ El título de la tarea es requerido');
+        return;
+    }
+    
+    try {
+        let response;
+        let requestData;
+        
+        if (isEditMode && editingTaskId) {
+            // ACTUALIZAR tarea existente
+            requestData = {
+                title: title,
+                description: description || null,
+                status: status,
+                priority: priority
+            };
+            
+            console.log('🔧 Actualizando tarea:', editingTaskId, requestData);
+            
+            response = await fetch(`${API_BASE}/tasks/${editingTaskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            });
+        } else {
+            // CREAR nueva tarea
+            requestData = {
+                user_id: userId,
+                title: title,
+                description: description || null,
+                status: status,
+                priority: priority
+            };
+            
+            console.log('✨ Creando nueva tarea:', requestData);
+            
+            response = await fetch(`${API_BASE}/tasks/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            });
+        }
+        
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Error ${response.status}: ${errorData}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Operación exitosa:', isEditMode ? 'Actualización' : 'Creación', result);
+        
+        // Resetear y volver a la lista
+        resetEditMode();
+        showView('list');
+        
+    } catch (error) {
+        console.error('❌ Error al guardar tarea:', error);
+        alert(`Error al guardar la tarea: ${error.message}`);
+    }
+}
+
+async function editTask(id) {
+    try {
+        console.log('🔧 Iniciando edición de tarea:', id);
+        
+        const response = await fetch(`${API_BASE}/tasks/${id}`);
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar la tarea');
+        }
+        
+        const task = await response.json();
+        console.log('📄 Tarea cargada para edición:', task);
+        
+        // Verificar que la tarea pertenece al usuario actual
+        if (task.user_id !== userId) {
+            alert('❌ No tienes permisos para editar esta tarea');
+            return;
+        }
+        
+        // Configurar modo edición
+        setEditMode(id, task);
+        
+        // Mostrar vista de formulario
+        showView('add');
+        
+    } catch (error) {
+        console.error('❌ Error al cargar tarea para edición:', error);
+        alert('Error al cargar la tarea para editar');
+    }
+}
+
+async function deleteTask(id) {
+    if (!confirm('🗑️ ¿Estás seguro de que quieres eliminar esta tarea?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/tasks/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al eliminar la tarea');
+        }
+        
+        console.log('✅ Tarea eliminada exitosamente');
+        loadTasks();
+        
+    } catch (error) {
+        console.error('❌ Error al eliminar tarea:', error);
+        alert('Error al eliminar la tarea');
+    }
+}
+
+// ============================================================================
+// INTERFAZ DE USUARIO
+// ============================================================================
 function displayTasks(tasks) {
     const grid = document.getElementById('tasks-grid');
     
     if (tasks.length === 0) {
-        grid.innerHTML = '<div class="glass-card"><p style="color: white; text-align: center;">No hay tareas para mostrar.</p></div>';
+        grid.innerHTML = `
+            <div class="glass-card">
+                <p style="color: #e5e9f2; text-align: center;">
+                    📝 No hay tareas para mostrar.<br>
+                    <small>¡Crea tu primera tarea!</small>
+                </p>
+            </div>`;
         return;
     }
     
-    grid.innerHTML = tasks.map(task => `
+    // Ordenar tareas por prioridad (alta a baja) y luego por fecha de creación
+    const sortedTasks = tasks.sort((a, b) => {
+        if (b.priority !== a.priority) {
+            return b.priority - a.priority; // Prioridad alta primero
+        }
+        return new Date(b.created_at) - new Date(a.created_at); // Más reciente primero
+    });
+    
+    grid.innerHTML = sortedTasks.map(task => `
         <div class="glass-card task-item">
             <div class="task-header">
-                <h3 class="task-title">${task.title}</h3>
-                <span class="task-status status-${task.status.toLowerCase().replace(' ', '-')}">${task.status}</span>
-            </div>
-            ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-            <div class="task-meta">
-                <div class="priority-indicator">
-                    <span>Prioridad:</span>
-                    <div class="priority-dots">
-                        ${Array(5).fill(0).map((_, i) => 
-                            `<div class="priority-dot ${i < task.priority ? 'active' : ''}"></div>`
-                        ).join('')}
-                    </div>
+                <h3 class="task-title">${escapeHtml(task.title)}</h3>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="priority-badge" style="background: ${PRIORITY.getColor(task.priority)}20; color: ${PRIORITY.getColor(task.priority)}; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">
+                        ${PRIORITY.getIcon(task.priority)} ${PRIORITY.getName(task.priority)}
+                    </span>
+                    <span class="task-status status-${task.status.toLowerCase().replace(' ', '-')}">
+                        ${task.status}
+                    </span>
                 </div>
-                <small>Creado: ${new Date(task.created_at).toLocaleDateString()}</small>
+            </div>
+            ${task.description ? `
+                <div class="task-description">${escapeHtml(task.description)}</div>
+            ` : ''}
+            <div class="task-meta">
+                <small>Creado: ${formatDate(task.created_at)}</small>
+                <small>Actualizado: ${formatDate(task.updated_at)}</small>
             </div>
             <div class="task-actions">
-                <button onclick="editTask(${task.id})" class="glass-btn small">✏️ Editar</button>
-                <button onclick="deleteTask(${task.id})" class="glass-btn small danger">🗑️ Eliminar</button>
+                <button onclick="editTask(${task.id})" class="glass-btn small">
+                    ✏️ Editar
+                </button>
+                <button onclick="deleteTask(${task.id})" class="glass-btn small danger">
+                    🗑️ Eliminar
+                </button>
             </div>
         </div>
     `).join('');
 }
 
-// Enviar formulario (crear o actualizar)
-async function submitTask(event) {
-    event.preventDefault();
-    
-    const taskData = {
-        title: document.getElementById('title').value,
-        description: document.getElementById('description').value || null,
-        status: document.getElementById('status').value,
-        priority: parseInt(document.getElementById('priority').value)
-    };
-    
-    try {
-        let response;
-        if (editingTaskId) {
-            // Actualizar tarea existente
-            response = await fetch(`http://localhost:8000/tasks/${editingTaskId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(taskData)
-            });
-        } else {
-            // Crear nueva tarea
-            response = await fetch('http://localhost:8000/tasks/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(taskData)
-            });
-        }
-        
-        if (!response.ok) throw new Error('Error al guardar la tarea');
-        
-        showView('list');
-        editingTaskId = null;
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al guardar la tarea');
-    }
-}
-
-// Editar tarea
-async function editTask(id) {
-    try {
-        const response = await fetch(`http://localhost:8000/tasks/${id}`);
-        if (!response.ok) throw new Error('Error al cargar la tarea');
-        
-        const task = await response.json();
-        
-        // Llenar el formulario con los datos de la tarea
-        document.getElementById('task-id').value = task.id;
-        document.getElementById('title').value = task.title;
-        document.getElementById('description').value = task.description || '';
-        document.getElementById('status').value = task.status;
-        document.getElementById('priority').value = task.priority;
-        
-        document.getElementById('form-title').textContent = 'Editar Tarea';
-        document.getElementById('submit-btn').textContent = 'Actualizar Tarea';
-        
-        editingTaskId = id;
-        showView('add');
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar la tarea para editar');
-    }
-}
-
-// Eliminar tarea
-async function deleteTask(id) {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
-    
-    try {
-        const response = await fetch(`http://localhost:8000/tasks/${id}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) throw new Error('Error al eliminar la tarea');
-        
-        loadTasks();
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error al eliminar la tarea');
-    }
-}
-
-// Limpiar formulario
-function clearForm() {
-    document.getElementById('task-id').value = '';
-    document.getElementById('title').value = '';
-    document.getElementById('description').value = '';
-    document.getElementById('status').value = 'To Do';
-    document.getElementById('priority').value = '1';
-    editingTaskId = null;
-}
-
-// Cargar estadísticas
 async function loadStats() {
     try {
-        const response = await fetch('http://localhost:8000/tasks/');
-        if (!response.ok) throw new Error('Error al cargar estadísticas');
+        const response = await fetch(`${API_BASE}/tasks/?user_id=${userId}`);
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar estadísticas');
+        }
         
         const tasks = await response.json();
         
         const stats = {
             total: tasks.length,
             todo: tasks.filter(t => t.status === 'To Do').length,
-            progress: tasks.filter(t => t.status === 'In Progress').length,
+            inProgress: tasks.filter(t => t.status === 'In Progress').length,
             done: tasks.filter(t => t.status === 'Done').length,
-            priorities: {}
+            // Estadísticas por prioridad
+            highPriority: tasks.filter(t => t.priority === 3).length,
+            mediumPriority: tasks.filter(t => t.priority === 2).length,
+            lowPriority: tasks.filter(t => t.priority === 1).length
         };
-        
-        // Contar por prioridades
-        tasks.forEach(task => {
-            stats.priorities[task.priority] = (stats.priorities[task.priority] || 0) + 1;
-        });
         
         document.getElementById('stats-content').innerHTML = `
             <div style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <!-- Estadísticas por estado -->
                 <div class="glass-card">
-                    <h3 style="color: white; margin: 0 0 10px 0;">Total de Tareas</h3>
-                    <p style="color: white; font-size: 2rem; margin: 0;">${stats.total}</p>
+                    <h3 style="color: #e5e9f2; margin: 0 0 10px 0;">Total</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.total}</p>
                 </div>
                 <div class="glass-card">
-                    <h3 style="color: #ffc107; margin: 0 0 10px 0;">Pendientes</h3>
-                    <p style="color: white; font-size: 2rem; margin: 0;">${stats.todo}</p>
+                    <h3 style="color: #7a869a; margin: 0 0 10px 0;">Pendientes</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.todo}</p>
                 </div>
                 <div class="glass-card">
-                    <h3 style="color: #007bff; margin: 0 0 10px 0;">En Progreso</h3>
-                    <p style="color: white; font-size: 2rem; margin: 0;">${stats.progress}</p>
+                    <h3 style="color: #2563eb; margin: 0 0 10px 0;">En Progreso</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.inProgress}</p>
                 </div>
                 <div class="glass-card">
-                    <h3 style="color: #28a745; margin: 0 0 10px 0;">Completadas</h3>
-                    <p style="color: white; font-size: 2rem; margin: 0;">${stats.done}</p>
+                    <h3 style="color: #43a047; margin: 0 0 10px 0;">Completadas</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.done}</p>
+                </div>
+                
+                <!-- Estadísticas por prioridad -->
+                <div class="glass-card">
+                    <h3 style="color: #e53935; margin: 0 0 10px 0;">🔴 Alta Prioridad</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.highPriority}</p>
+                </div>
+                <div class="glass-card">
+                    <h3 style="color: #ffc107; margin: 0 0 10px 0;">🟡 Media Prioridad</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.mediumPriority}</p>
+                </div>
+                <div class="glass-card">
+                    <h3 style="color: #43a047; margin: 0 0 10px 0;">🟢 Baja Prioridad</h3>
+                    <p style="color: #e5e9f2; font-size: 2rem; margin: 0;">${stats.lowPriority}</p>
                 </div>
             </div>
         `;
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Error al cargar estadísticas:', error);
         document.getElementById('stats-content').innerHTML = 
-            '<p style="color: white; text-align: center;">Error al cargar las estadísticas</p>';
+            '<p style="color: #e5e9f2; text-align: center;">Error al cargar las estadísticas</p>';
     }
+}
+
+// ============================================================================
+// UTILIDADES
+// ============================================================================
+function setLoading(show) {
+    document.getElementById('tasks-loading').style.display = show ? 'block' : 'none';
+}
+
+function clearForm() {
+    document.getElementById('task-id').value = '';
+    document.getElementById('title').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('status').value = 'To Do';
+    document.getElementById('priority').value = '1'; // Prioridad baja por defecto
+    resetEditMode();
+}
+
+function showError(title, message) {
+    document.getElementById('tasks-grid').innerHTML = `
+        <div class="glass-card">
+            <p style="color: #e53935; text-align: center;">
+                ❌ ${title}<br>
+                <small>${message}</small><br>
+                <small>Verifica que la API esté ejecutándose en ${API_BASE}</small>
+            </p>
+            <div style="text-align: center; margin-top: 10px;">
+                <button onclick="loadTasks()" class="glass-btn small">🔄 Reintentar</button>
+            </div>
+        </div>`;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('es-ES');
 }
 </script>
